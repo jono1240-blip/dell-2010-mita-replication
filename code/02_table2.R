@@ -25,3 +25,10 @@ m2 <- run_spec(75)
 m3 <- run_spec(50)
 
 etable(m1, m2, m3, keep = "pothuan_mita")
+
+# Save table
+etable(m1, m2, m3,
+       keep    = "pothuan_mita",
+       headers = c("<100 km", "<75 km", "<50 km"),
+       file    = here("output/tables/table2_panelA.tex"),
+       replace = TRUE)
