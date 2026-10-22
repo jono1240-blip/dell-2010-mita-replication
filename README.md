@@ -17,6 +17,18 @@ Specification: cubic polynomial in latitude and longitude, household demographic
 
 Coefficients match the original to within 0.004 and standard errors to within 0.001. See *Notes on the replication* below for the one-observation difference.
 
+## Robustness: dropping non-positive consumption
+
+Dell's code sets log consumption to 0 for households whose consumption net of transfers is zero or negative, rather than dropping them. Dropping them instead makes the estimated mita effect larger at every distance cutoff:
+
+| | < 100 km | < 75 km | < 50 km |
+|---|---|---|---|
+| Original coding | −0.282 (0.199) | −0.214 (0.207) | −0.327 (0.219) |
+| Drop non-positive consumption | −0.361 (0.217) | −0.327 (0.222) | −0.420 (0.234) |
+| Households dropped | 15 | 9 | 5 |
+
+Dell's coding choice is therefore conservative: if anything, the headline estimate understates the consumption gap. Only a few households are affected and the standard errors remain large, so this shows the result is robust to the choice rather than pinning down a larger effect. Full table: `output/tables/table2_robustness.tex`.
+
 ## Figures
 
 **Figure 1.** Mita assignment and district-level household consumption around the boundary.
@@ -35,7 +47,7 @@ The RD plot uses raw binned means without the controls in Table 2, so the visibl
 2. **Restore packages.** Open `dell-2010-mita-replication.Rproj` in RStudio and run `renv::restore()`.
 3. **Run the scripts in order:**
    - `code/01_clean_consumption.R` builds household consumption per equivalent adult from the 2001 ENAHO survey and merges district geography. It writes `data/clean/consumption.rds`.
-   - `code/02_table2.R` estimates Table 2, Panel A and writes `output/tables/table2_panelA.tex`.
+   - `code/02_table2.R` estimates Table 2, Panel A and the robustness check, and writes both tables to `output/tables/`.
    - `code/03_figures.R` draws the boundary map and the RD plot and writes them to `output/figures/`.
 
 ## Repository structure
@@ -52,7 +64,7 @@ dell_original/   Dell's original Stata, R and Python code, kept for reference
 ## Notes on the replication
 
 - **One-observation gap.** Each column has one fewer household than the original. The gap is the same in all three columns, so the missing household lies within 50 km of the boundary. Tests so far rule out missing household-relationship codes (`p203`) and households without a head.
-- **Negative consumption set to zero.** For 59 of 3,075 households, reported transfers exceed total spending, so consumption net of transfers is negative and its log is undefined. Following the original code (`recode lhhequiv .=0`), these are set to 0 rather than dropped. Because this treats them as extremely poor rather than missing, it is worth testing whether excluding them changes the estimates.
+- **Negative consumption set to zero.** For 59 of 3,075 households, reported transfers exceed total spending, so consumption net of transfers is negative and its log is undefined. Following the original code (`recode lhhequiv .=0`), these are set to 0 rather than dropped. See the robustness check below.
 - **Households with two heads.** Three households report two household heads and therefore appear twice in the household-level data. This matches the behavior of the original code.
 - **Identifier cleaning.** ENAHO identifiers contain leading spaces. Department codes are recovered by trimming and zero-padding `ubigeo` to six digits.
 
@@ -61,7 +73,7 @@ dell_original/   Dell's original Stata, R and Python code, kept for reference
 - [ ] Table 2, Panels B and C (distance to Potosí and distance to the boundary polynomials)
 - [ ] Table 2, child stunting outcome
 - [x] RD map figure with `sf`
-- [ ] Robustness: exclude the 59 negative-consumption households
+- [x] Robustness: exclude the 59 negative-consumption households
 
 ## Reference
 
