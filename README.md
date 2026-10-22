@@ -17,6 +17,18 @@ Specification: cubic polynomial in latitude and longitude, household demographic
 
 Coefficients match the original to within 0.004 and standard errors to within 0.001. See *Notes on the replication* below for the one-observation difference.
 
+## Figures
+
+**Figure 1.** Mita assignment and district-level household consumption around the boundary.
+
+![Map of the mita boundary](output/figures/fig1_mita_map.png)
+
+**Figure 2.** Regression discontinuity plot: binned means of log household consumption against distance to the mita boundary, with separate linear fits on each side.
+
+![RD plot](output/figures/fig2_rd_plot.png)
+
+The RD plot uses raw binned means without the controls in Table 2, so the visible gap (about 0.2 log points) is a descriptive check, not the estimate.
+
 ## How to run
 
 1. **Get the data.** Download the replication package from [Econometrica](https://www.econometricsociety.org/publications/econometrica/2010/11/01/persistent-effects-perus-mining/supp/8121_data_and_programs_0.zip) and unzip it. Move the `.dta` files into `data/raw/`. The raw data (about 1.2 GB) is not included in this repository.
@@ -24,6 +36,7 @@ Coefficients match the original to within 0.004 and standard errors to within 0.
 3. **Run the scripts in order:**
    - `code/01_clean_consumption.R` builds household consumption per equivalent adult from the 2001 ENAHO survey and merges district geography. It writes `data/clean/consumption.rds`.
    - `code/02_table2.R` estimates Table 2, Panel A and writes `output/tables/table2_panelA.tex`.
+   - `code/03_figures.R` draws the boundary map and the RD plot and writes them to `output/figures/`.
 
 ## Repository structure
 
@@ -32,6 +45,7 @@ code/            R scripts (run in numbered order)
 data/raw/        original data (not tracked, see "How to run")
 data/clean/      intermediate data built by the scripts (not tracked)
 output/tables/   regression tables
+output/figures/  maps and RD plot
 dell_original/   Dell's original Stata, R and Python code, kept for reference
 ```
 
@@ -46,7 +60,7 @@ dell_original/   Dell's original Stata, R and Python code, kept for reference
 
 - [ ] Table 2, Panels B and C (distance to Potosí and distance to the boundary polynomials)
 - [ ] Table 2, child stunting outcome
-- [ ] RD map figure with `sf`
+- [x] RD map figure with `sf`
 - [ ] Robustness: exclude the 59 negative-consumption households
 
 ## Reference
