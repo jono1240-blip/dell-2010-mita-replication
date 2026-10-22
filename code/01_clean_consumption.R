@@ -38,3 +38,29 @@ roster <- roster |>
     ces = sum(weight)               # equivalent adults in household
   ) |>
   ungroup()
+
+# Household consumption (sumaria file)
+transfers <- c("ingtexhd", "ingtrahd", "gru13hd1", "gru13hd2", "gru13hd3",
+               "gru23hd1", "gru23hd2", "gru33hd1", "gru33hd2",
+               "gru43hd1", "gru43hd2", "gru53hd1", "gru53hd2",
+               "gru63hd1", "gru63hd2", "gru73hd1", "gru73hd2",
+               "gru83hd1", "gru83hd2")
+
+sumaria <- read_dta(here("data/raw/sumaria_2001iv.dta")) |>
+  select(conglome, vivienda, hogar, gashog2d, defesp, all_of(transfers)) |>
+  mutate(
+    across(c(conglome, vivienda, hogar), str_trim),       # same space problem
+    across(all_of(transfers), ~ replace_na(.x, 0)),        # missing transfer = 0
+    hconsump = gashog2d - rowSums(across(all_of(transfers)))  # spending minus transfers
+  )
+
+# Merge onto roster, deflate, keep one row per household
+consumption <- roster |>
+  left_join(sumaria, by = c("conglome", "vivienda", "hogar")) |>
+  mutate(
+    hconsumplm = hconsump / defesp,                              # convert to Lima prices
+    hhequiv    = hconsumplm / ces,                               # consumption per equivalent adult
+    lhhequiv   = log(if_else(hhequiv > 0, hhequiv, NA_real_)),   # log only if positive
+    lhhequiv   = replace_na(lhhequiv, 0)                         # Dell: recode lhhequiv .=0
+  ) |>
+  filter(hhead == 1)  
