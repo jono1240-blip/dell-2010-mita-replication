@@ -27,15 +27,18 @@ roster <- roster |>
   mutate(hid = paste0(conglome, vivienda, hogar)) |>   # household ID
   group_by(hid) |>
   mutate(
-    hhmem   = n(),                  # number of people in household
-    kids    = sum(age < 15),        # members aged 0–14
-    k_hhmem = kids / hhmem,         # share of household who are kids
-    weight  = case_when(
-      age < 5  ~ 0.4,               # infants count as 0.4
-      age < 15 ~ 0.5,               # children count as 0.5
-      TRUE     ~ 1                  # adults count as 1
+    hhmem    = n(),                         # number of people in household
+    kids     = sum(age < 15),               # members aged 0–14
+    infants  = sum(age < 5),                # NEW: aged 0–4
+    children = sum(age >= 5 & age < 15),    # NEW: aged 5–14
+    adults   = sum(age >= 15),              # NEW: aged 15+
+    k_hhmem  = kids / hhmem,                # share of household who are kids
+    weight   = case_when(
+      age < 5  ~ 0.4,                       # infants count as 0.4
+      age < 15 ~ 0.5,                       # children count as 0.5
+      TRUE     ~ 1                          # adults count as 1
     ),
-    ces = sum(weight)               # equivalent adults in household
+    ces = sum(weight)                       # equivalent adults in household
   ) |>
   ungroup()
 
@@ -64,3 +67,11 @@ consumption <- roster |>
     lhhequiv   = replace_na(lhhequiv, 0)                         # Dell: recode lhhequiv .=0
   ) |>
   filter(hhead == 1)  
+
+# Merge district geography (mita status, coordinates, distance to boundary)
+gis <- read_dta(here("data/raw/gis_dist.dta"))
+
+consumption <- consumption |>
+  mutate(ubigeo = as.numeric(ubigeo)) |>          # gis_dist stores ubigeo as a number
+  inner_join(gis, by = "ubigeo")                  # Dell: keep if _merge==3
+
