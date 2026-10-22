@@ -75,3 +75,4 @@ consumption <- consumption |>
   mutate(ubigeo = as.numeric(ubigeo)) |>          # gis_dist stores ubigeo as a number
   inner_join(gis, by = "ubigeo")                  # Dell: keep if _merge==3
 
+write_rds(consumption, here("data/clean/consumption.rds"))
