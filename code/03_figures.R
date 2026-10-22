@@ -62,3 +62,87 @@ fig2
 
 ggsave(here("output/figures/fig2_rd_plot.png"), fig2,
        width = 8, height = 5, dpi = 300, bg = "white")
+
+
+# ---- Figure 1: maps ---------------------------------------------------------
+
+sf_use_s2(FALSE)   # flat-earth geometry: fine at this scale, avoids invalid-polygon errors
+
+gis_dir <- here("data/raw/gis/rdfigs_datafiles/gis")
+
+# Dell's shapefiles: all Peruvian districts, and the mita boundary line
+districts <- st_read(file.path(gis_dir, "district_wgs.shp"), quiet = TRUE) |>
+  st_make_valid()
+boundary  <- st_read(file.path(gis_dir, "boundary_wgs.shp"), quiet = TRUE)
+
+# Study region, labelled by mita status
+study <- districts |>
+  filter(STUDY_REG == 1) |>
+  mutate(status = case_when(
+    CUSCO == 1   ~ "Cusco (excluded)",
+    PH_MITA == 1 ~ "Mita",
+    TRUE         ~ "Non-mita"
+  ))
+
+# Map window: study region plus a small margin; neighbouring districts as grey context
+pad     <- 0.25
+window  <- st_bbox(study) + c(-pad, -pad, pad, pad)   # xmin, ymin, xmax, ymax
+xlim    <- unname(window[c("xmin", "xmax")])
+ylim    <- unname(window[c("ymin", "ymax")])
+context <- st_crop(districts, window)
+
+# Department capitals for orientation (point at district centre, label nudged off the lines)
+cities <- tibble(
+  name    = c("Cusco", "Ayacucho", "Abancay", "Puno", "Arequipa"),
+  ubigeo  = c(80101, 50101, 30101, 210101, 40101),
+  nudge_x = c(0.35, 0, -0.45, 0, 0),
+  nudge_y = c(0.15, 0.15, -0.15, 0.17, 0.15)
+) |>
+  inner_join(districts, by = "ubigeo") |>
+  st_as_sf() |>
+  st_centroid() |>
+  suppressWarnings()   # centroid of lon/lat polygons: fine for placing labels
+
+city_xy <- cities |>
+  mutate(x = st_coordinates(geometry)[, 1] + nudge_x,
+         y = st_coordinates(geometry)[, 2] + nudge_y) |>
+  st_drop_geometry()
+
+# Layers shared by both map panels
+theme_map <- theme_void(base_size = 11) +
+  theme(
+    plot.title      = element_text(face = "bold", size = 12),
+    plot.subtitle   = element_text(colour = "grey35", size = 9.5),
+    legend.position = "bottom",
+    legend.title    = element_text(size = 9),
+    legend.text     = element_text(size = 9)
+  )
+
+base_layers <- list(
+  geom_sf(data = context, fill = "grey96", colour = "grey85", linewidth = 0.1)
+)
+
+top_layers <- list(
+  geom_sf(data = boundary, colour = "black", linewidth = 0.9),
+  geom_sf(data = cities, shape = 21, fill = "white", colour = "black", size = 1.8),
+  geom_label(data = city_xy, aes(x, y, label = name), size = 2.9,
+             fontface = "bold", fill = alpha("white", 0.85),
+             label.size = 0, label.padding = unit(0.12, "lines")),
+  coord_sf(xlim = xlim, ylim = ylim, expand = FALSE, datum = NA)
+)
+
+# Panel A: which districts were in the mita
+map_status <- ggplot() +
+  base_layers +
+  geom_sf(data = study, aes(fill = status), colour = "white", linewidth = 0.15) +
+  top_layers +
+  scale_fill_manual(
+    values = c("Mita" = col_mita, "Non-mita" = col_nonmita,
+               "Cusco (excluded)" = "#D9D4CC"),
+    name = NULL
+  ) +
+  labs(title = "A. Mita assignment",
+       subtitle = "Districts in the study region; black line = mita boundary") +
+  theme_map
+
+map_status
