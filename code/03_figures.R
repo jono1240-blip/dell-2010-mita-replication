@@ -5,6 +5,7 @@
 library(here)
 library(tidyverse)
 library(sf)
+library(patchwork)   # combines plots side by side
 
 # Same sample as Table 2, column 1
 rd_sample <- read_rds(here("data/clean/consumption.rds")) |>
@@ -145,4 +146,36 @@ map_status <- ggplot() +
        subtitle = "Districts in the study region; black line = mita boundary") +
   theme_map
 
-map_status
+# Panel B: average household consumption in each district
+district_means <- rd_sample |>
+  group_by(ubigeo) |>
+  summarise(mean_lhhequiv = mean(lhhequiv), n_households = n())
+
+study_cons <- study |>
+  left_join(district_means, by = "ubigeo")   # districts with no sampled households stay NA (grey)
+
+map_cons <- ggplot() +
+  base_layers +
+  geom_sf(data = study_cons, aes(fill = mean_lhhequiv),
+          colour = "white", linewidth = 0.15) +
+  top_layers +
+  scale_fill_viridis_c(
+    option = "mako", na.value = "grey90",
+    name = "Mean log consumption\nper equivalent adult (2001)",
+    guide = guide_colourbar(barwidth = 10, barheight = 0.5, title.position = "top")
+  ) +
+  labs(title = "B. Household consumption",
+       subtitle = "District means, households within 100 km of the boundary") +
+  theme_map
+
+# Combine panels A and B side by side and save
+fig1 <- map_status + map_cons +
+  plot_annotation(
+    caption = "Data: Dell (2010) replication files; ENAHO 2001. Grey districts have no sampled households.",
+    theme   = theme(plot.caption = element_text(colour = "grey40", size = 8))
+  )
+
+fig1
+
+ggsave(here("output/figures/fig1_mita_map.png"), fig1,
+       width = 11, height = 6.2, dpi = 300, bg = "white")
