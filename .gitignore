@@ -48,3 +48,8 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Project
+data/raw/
+_to_delete/
+.DS_Store
