@@ -21,3 +21,20 @@ roster <- read_dta(here("data/raw/enaho01_2001iv_200.dta")) |>
     ccdd  = as.numeric(substr(ubigeo, 1, 2))   # department code
   ) |>
   filter(ccdd %in% c(3, 4, 5, 8, 21))          # keep the 5 study departments
+
+# Household size and equivalence scale
+roster <- roster |>
+  mutate(hid = paste0(conglome, vivienda, hogar)) |>   # household ID
+  group_by(hid) |>
+  mutate(
+    hhmem   = n(),                  # number of people in household
+    kids    = sum(age < 15),        # members aged 0–14
+    k_hhmem = kids / hhmem,         # share of household who are kids
+    weight  = case_when(
+      age < 5  ~ 0.4,               # infants count as 0.4
+      age < 15 ~ 0.5,               # children count as 0.5
+      TRUE     ~ 1                  # adults count as 1
+    ),
+    ces = sum(weight)               # equivalent adults in household
+  ) |>
+  ungroup()
